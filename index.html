@@ -39,7 +39,7 @@
             text-align: center;
             opacity: 0;
             transform: scale(0.7);
-            transition: all 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transition: all 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             pointer-events: none;
             background: rgba(0, 0, 0, 0.65);
             padding: 40px 60px;
@@ -92,11 +92,10 @@
             color: #ff1493;
             text-shadow: 0 0 20px #ff1493, 0 0 40px #ff69b4;
             z-index: 30;
-            transition: opacity 0.4s ease, transform 0.4s ease;
-            animation: countdownPulse 1s infinite;
+            transition: opacity 0.3s ease, transform 0.3s ease;
         }
 
-        /* شاشة البدء لتشغيل الصوت بشكل مضمون */
+        /* شاشة البدء */
         #start-overlay {
             position: absolute;
             top: 0;
@@ -121,9 +120,7 @@
             box-shadow: 0 0 25px rgba(255, 20, 147, 0.6);
             cursor: pointer;
             transition: transform 0.2s;
-        }
-        .start-btn:hover {
-            transform: scale(1.05);
+            animation: pulse 1.5s infinite;
         }
 
         /* تأثيرات الألوان الإبداعية والنبض */
@@ -138,23 +135,20 @@
             0%, 100% { transform: scale(1); }
             50% { transform: scale(1.03); }
         }
-
-        @keyframes countdownPulse {
-            0% { transform: scale(0.8); opacity: 0.5; }
-            50% { transform: scale(1.2); opacity: 1; }
-            100% { transform: scale(1); opacity: 0.8; }
-        }
     </style>
 </head>
 <body>
 
+    <!-- شاشة البداية لتشغيل الصوت مباشرة دون حظر المتصفح -->
     <div id="start-overlay" onclick="startCelebration()">
         <button class="start-btn">Open Surprise 🎁</button>
     </div>
 
     <div id="container">
+        <!-- عداد الـ 10 ثواني المبدئي -->
         <div id="intro-countdown" style="display: none;">10</div>
 
+        <!-- محتوى عيد الميلاد في منتصف الشاشة تماماً -->
         <div class="celebration-content" id="birthday-content">
             <div class="name">Hanon</div>
             <div class="age-highlight">20</div>
@@ -163,7 +157,8 @@
 
         <canvas id="fireworks"></canvas>
         
-        <audio id="bg-music" loop>
+        <!-- الأغنية المطلوبة (بدون خاصية loop عشان تشتغل مرة واحدة بس) -->
+        <audio id="bg-music">
             <source src="https://files.catbox.moe/7he7y7.mp3" type="audio/mpeg">
         </audio>
     </div>
@@ -232,43 +227,58 @@
         }
         animate();
 
-        // دالة البدء والمزامنة الكاملة
+        // دالة البدء المزامنة بالمللي ثانية مع صوت الأغنية الرسمي
         function startCelebration() {
-            // 1. إخفاء شاشة الحماية فوراً
             document.getElementById('start-overlay').style.display = 'none';
             
             const introCountdown = document.getElementById('intro-countdown');
             const birthdayContent = document.getElementById('birthday-content');
             const audio = document.getElementById('bg-music');
             
-            // 2. إظهار العداد الرقمي
             introCountdown.style.display = 'block';
             
-            // 3. تشغيل الأغنية في الخلفية فوراً بالتزامن مع ظهور رقم 10
+            // تشغيل الأغنية فوراً
             audio.play().catch(err => console.log("Audio playback error:", err));
 
-            let timeLeft = 10;
-            const timer = setInterval(() => {
-                timeLeft--;
-                if (timeLeft >= 0) {
-                    introCountdown.innerText = timeLeft;
-                } else {
-                    clearInterval(timer);
-                    // تلاشي العداد
-                    introCountdown.style.opacity = '0';
-                    introCountdown.style.transform = 'scale(0)';
-                    
-                    setTimeout(() => {
-                        introCountdown.remove();
+            // المزامنة الذكية: نراقب وقت الأغنية الحالي ثانية بثانية لتحديث الرقم
+            let lastTime = -1;
+            let countdownEnded = false;
+
+            const syncTimer = setInterval(() => {
+                if (countdownEnded) return;
+
+                // قراءة الوقت الحالي للأغنية بالثواني
+                let currentTime = Math.floor(audio.currentTime);
+
+                if (currentTime !== lastTime) {
+                    lastTime = currentTime;
+                    let timeLeft = 10 - currentTime; // لأن العد تنازلي من 10 ثواني
+
+                    if (timeLeft >= 0) {
+                        introCountdown.innerText = timeLeft;
+                        // تأثير تكبير خفيف مع كل رقم جديد
+                        introCountdown.style.transform = 'scale(1.2)';
+                        setTimeout(() => {
+                            introCountdown.style.transform = 'scale(1)';
+                        }, 200);
+                    } else {
+                        // انتهى الـ 10 ثواني بالظبط مع صوت الأغنية
+                        countdownEnded = true;
+                        clearInterval(syncTimer);
                         
-                        // 4. إظهار الاسم والترتيب الجديد في المنتصف
-                        birthdayContent.classList.add('show');
+                        introCountdown.style.opacity = '0';
+                        introCountdown.style.transform = 'scale(0)';
                         
-                        // 5. تشغيل الألعاب النارية الملونة
-                        startFireworks = true;
-                    }, 400);
+                        setTimeout(() => {
+                            introCountdown.remove();
+                            // إظهار الكلام والترتيب الاحترافي في النص
+                            birthdayContent.classList.add('show');
+                            // إطلاق الألعاب النارية
+                            startFireworks = true;
+                        }, 300);
+                    }
                 }
-            }, 1000);
+            }, 50); // فحص سريع جداً كل 50 مللي ثانية لضمان دقة متناهية
         }
 
         window.addEventListener('resize', () => {
